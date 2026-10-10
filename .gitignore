@@ -1,0 +1,10 @@
+# 개인 데이터 (재료·레시피·이번 주 메뉴)
+data.json
+data.json.tmp
+
+# 로컬 개발 도구 설정
+.claude/
+
+# OS / 의존성
+.DS_Store
+node_modules/

@@ -1,0 +1,9 @@
+{
+  "name": "home-recipe",
+  "version": "1.0.0",
+  "description": "집밥 레시피 - 보유 재료 기반 레시피 추천",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  }
+}

@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>집밥 레시피</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍚</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>🍚 집밥 레시피</h1>
+    <span id="save-status" class="save-status" aria-live="polite"></span>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="today" role="tab">오늘의 추천</button>
+    <button class="tab" data-tab="week" role="tab">이번 주<span id="week-count" class="tab-count" hidden></span></button>
+    <button class="tab" data-tab="fridge" role="tab">냉장고</button>
+    <button class="tab" data-tab="recipes" role="tab">레시피</button>
+  </nav>
+
+  <main>
+    <!-- 오늘의 추천 -->
+    <section id="tab-today" class="panel active">
+      <div class="panel-head">
+        <h2>오늘의 레시피</h2>
+        <button id="btn-shuffle" class="btn ghost">🔄 다른 추천 보기</button>
+      </div>
+      <div class="options">
+        <label class="option-toggle"><input type="checkbox" id="include-expired" checked> 기한 지난 재료도 추천에 포함</label>
+        <label class="option-toggle"><input type="checkbox" id="sauce-exempt" checked> 양념·소스는 기한이 지나도 그대로 사용</label>
+      </div>
+      <div id="expiring-summary"></div>
+      <div id="today-pick"></div>
+      <h3 class="sub-title" id="ranking-title">추천 순위</h3>
+      <ol id="ranking" class="ranking"></ol>
+    </section>
+
+    <!-- 이번 주 -->
+    <section id="tab-week" class="panel">
+      <div class="panel-head">
+        <h2>이번 주 먹을 레시피</h2>
+        <div class="head-actions">
+          <button id="btn-clear-done" class="btn ghost small">완료한 것 비우기</button>
+          <button id="btn-clear-week" class="btn ghost small danger">전체 비우기</button>
+        </div>
+      </div>
+      <div id="week-list"></div>
+      <h3 class="sub-title" id="shopping-title">🛒 장보기 목록</h3>
+      <div id="shopping-list"></div>
+    </section>
+
+    <!-- 냉장고 -->
+    <section id="tab-fridge" class="panel">
+      <div class="panel-head">
+        <h2>내 재료</h2>
+        <button id="btn-add-ingredient" class="btn primary">+ 재료 등록</button>
+      </div>
+      <input id="ing-search" class="search" type="search" placeholder="재료 이름으로 검색">
+      <div class="toolbar">
+        <label>정렬
+          <select id="ing-sort">
+            <option value="expiry">소비기한 임박순</option>
+            <option value="purchase">최근 구매순</option>
+            <option value="name">이름순</option>
+          </select>
+        </label>
+        <label>보관
+          <select id="ing-filter-storage">
+            <option value="">전체</option>
+          </select>
+        </label>
+        <label>카테고리
+          <select id="ing-filter-category">
+            <option value="">전체</option>
+          </select>
+        </label>
+      </div>
+      <ul id="ingredient-list" class="ingredient-list"></ul>
+    </section>
+
+    <!-- 레시피 -->
+    <section id="tab-recipes" class="panel">
+      <div class="panel-head">
+        <h2>내 레시피</h2>
+        <button id="btn-add-recipe" class="btn primary">+ 레시피 등록</button>
+      </div>
+      <input id="recipe-search" class="search" type="search" placeholder="레시피 이름이나 재료로 검색">
+      <div id="recipe-list" class="recipe-grid"></div>
+    </section>
+  </main>
+
+  <!-- 재료 등록/수정 -->
+  <dialog id="ingredient-dialog" class="dialog">
+    <form id="ingredient-form" method="dialog">
+      <h2 id="ingredient-dialog-title">재료 등록</h2>
+      <label>재료 이름 <input name="name" required placeholder="예: 대파"></label>
+      <div class="row">
+        <label>카테고리 <select name="category" required></select></label>
+        <label>수량 (선택) <input name="quantity" placeholder="예: 1단, 300g"></label>
+      </div>
+      <div class="row">
+        <div class="field">
+          <div class="field-label">구매 일자<label class="unknown-toggle"><input type="checkbox" data-unknown-for="purchaseDate"> 모름</label></div>
+          <div class="date-field">
+            <input name="purchaseDate" type="text" inputmode="numeric" placeholder="YYYY/MM/DD" maxlength="10" autocomplete="off" required aria-label="구매 일자">
+            <button type="button" class="icon-btn" data-pick-for="purchaseDate" title="달력에서 고르기">📅</button>
+            <input type="date" class="date-native" data-native-for="purchaseDate" tabindex="-1" aria-hidden="true">
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">소비 기한<label class="unknown-toggle"><input type="checkbox" data-unknown-for="expiryDate"> 모름</label></div>
+          <div class="date-field">
+            <input name="expiryDate" type="text" inputmode="numeric" placeholder="YYYY/MM/DD" maxlength="10" autocomplete="off" required aria-label="소비 기한">
+            <button type="button" class="icon-btn" data-pick-for="expiryDate" title="달력에서 고르기">📅</button>
+            <input type="date" class="date-native" data-native-for="expiryDate" tabindex="-1" aria-hidden="true">
+          </div>
+        </div>
+      </div>
+      <fieldset class="segmented">
+        <legend>보관 방법</legend>
+        <label><input type="radio" name="storage" value="냉장" checked> 냉장</label>
+        <label><input type="radio" name="storage" value="냉동"> 냉동</label>
+        <label><input type="radio" name="storage" value="실온"> 실온</label>
+      </fieldset>
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" data-close>취소</button>
+        <button type="submit" class="btn primary">저장</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 레시피 등록/수정 -->
+  <dialog id="recipe-dialog" class="dialog wide">
+    <form id="recipe-form" method="dialog">
+      <h2 id="recipe-dialog-title">레시피 등록</h2>
+      <label>레시피 이름 <input name="name" required placeholder="예: 김치찌개"></label>
+
+      <div class="field-group">
+        <div class="field-head">
+          <span>필요한 재료</span>
+          <button type="button" class="btn small ghost" id="btn-add-recipe-ing">+ 재료 추가</button>
+        </div>
+        <ul id="recipe-ing-rows" class="edit-rows"></ul>
+      </div>
+
+      <div class="field-group">
+        <div class="field-head">
+          <span>요리 순서</span>
+          <button type="button" class="btn small ghost" id="btn-add-step">+ 단계 추가</button>
+        </div>
+        <ol id="recipe-step-rows" class="edit-rows steps"></ol>
+      </div>
+
+      <label>레시피 출처 <input name="source" placeholder="예: 백종원 유튜브, https://..."></label>
+      <label>메모 (선택) <textarea name="memo" rows="2" placeholder="팁이나 변형 아이디어"></textarea></label>
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" data-close>취소</button>
+        <button type="submit" class="btn primary">저장</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 레시피 상세 -->
+  <dialog id="recipe-detail" class="dialog wide">
+    <div id="recipe-detail-body"></div>
+    <div class="dialog-actions">
+      <button type="button" class="btn danger ghost" id="btn-delete-recipe">삭제</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" data-close>닫기</button>
+      <button type="button" class="btn ghost" id="btn-edit-recipe">수정</button>
+      <button type="button" class="btn primary" id="btn-toggle-week"></button>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
